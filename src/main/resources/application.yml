@@ -1,0 +1,20 @@
+server.port: 9000
+
+spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: http://localhost:8080/auth/realms/cloud-gateway/.well-known/openid-configuration
+  cloud:
+    gateway:
+      routes:
+        - id: mlflow
+          uri: http://analytics-mlflow
+          predicates:
+            - Path=/analytics/**
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
