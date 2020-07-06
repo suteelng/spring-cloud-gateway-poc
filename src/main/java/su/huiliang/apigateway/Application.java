@@ -8,35 +8,18 @@ import org.springframework.cloud.gateway.route.RouteLocator;
 import org.springframework.cloud.gateway.route.builder.RouteLocatorBuilder;
 import org.springframework.cloud.security.oauth2.gateway.TokenRelayGatewayFilterFactory;
 import org.springframework.context.annotation.Bean;
+import org.springframework.security.config.web.server.ServerHttpSecurity;
+import org.springframework.security.web.server.SecurityWebFilterChain;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Mono;
 
 @SpringBootApplication
 @RestController
-@EnableConfigurationProperties(UriConfiguration.class)
 public class Application {
 
     public static void main(String[] args) {
         SpringApplication.run(Application.class, args);
-    }
-
-    @Bean
-    public RouteLocator myRoutes(RouteLocatorBuilder builder,
-                                 UriConfiguration uriConfiguration ) {
-        String httpUri = uriConfiguration.getHttpbin();
-        return builder.routes()
-                .route(p -> p
-                        .path("/get")
-                        .filters(f -> f.addRequestHeader("hello", "world"))
-                        .uri(httpUri))
-                .route(p -> p.host("*.hystrix.com")
-                        .filters(f -> f
-                                .hystrix(config -> config
-                                        .setName("mycmd")
-                                        .setFallbackUri("forward:/fallback")))
-                        .uri(httpUri))
-                .build();
     }
 
     @RequestMapping("/fallback")
@@ -44,31 +27,12 @@ public class Application {
         return Mono.just("fallback");
     }
 
-
-}
-
-
-@ConfigurationProperties
-class UriConfiguration {
-    private String httpbin = "http://httpbin.org:80";
-
-    public String getHttpbin() {
-        return httpbin;
-    }
-
-    public void setHttpbin(String httpbin) {
-        this.httpbin = httpbin;
+    @Bean
+    public SecurityWebFilterChain securityFilterChain(ServerHttpSecurity http) {
+        http.authorizeExchange()
+                .anyExchange().authenticated()
+                .and()
+                .httpBasic();
+        return http.build();
     }
 }
-
-//@Configuration
-//@EnableDiscoveryClient
-//public class GatewayDiscoveryConfiguration {
-//
-//    @Bean
-//    public DiscoveryClientRouteDefinitionLocator
-//    discoveryClientRouteLocator(DiscoveryClient discoveryClient) {
-//
-//        return new DiscoveryClientRouteDefinitionLocator(discoveryClient);
-//    }
-//}
